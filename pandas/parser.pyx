@@ -721,6 +721,7 @@ cdef class TextReader:
         cdef:
             size_t rows_read = 0
             chunks = []
+            int status
 
         if rows is None:
             while True:

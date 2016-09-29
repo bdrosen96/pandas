@@ -26,7 +26,6 @@ See LICENSE for the license
 
 #define READ_ERROR_OUT_OF_MEMORY   1
 
-#define VERBOSE
 #undef TRACE
 #define TRACE(X) printf X;
 
