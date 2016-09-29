@@ -630,7 +630,7 @@ static int parser_buffer_bytes(parser_t *self, size_t nbytes) {
 //    printf("pushing %c\n", c);
 
 #define PUSH_CHAR(c)                                \
-    //TRACE(("PUSH_CHAR: Pushing %c, slen= %d, stream_cap=%zu, stream_len=%zu\n", c, slen, self->stream_cap, self->stream_len)) \
+    /*TRACE(("PUSH_CHAR: Pushing %c, slen= %d, stream_cap=%zu, stream_len=%zu\n", c, slen, self->stream_cap, self->stream_len)) */ \
     if (slen >= maxstreamsize) {                    \
         TRACE(("PUSH_CHAR: ERROR!!! slen(%d) >= maxstreamsize(%d)\n", slen, maxstreamsize))            \
         self->error_msg = (char*) malloc(100);      \
