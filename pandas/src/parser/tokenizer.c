@@ -26,6 +26,9 @@ See LICENSE for the license
 
 #define READ_ERROR_OUT_OF_MEMORY   1
 
+#define VERBOSE
+#undef TRACE
+#define TRACE(X) printf X;
 
 /*
 * restore:
@@ -53,6 +56,7 @@ static void *safe_realloc(void *buffer, size_t size) {
     // different-realloc-behaviour-in-linux-and-osx
 
     result = realloc(buffer, size);
+    TRACE(("safe_realloc: buffer = %p, size = %zu, result = %p\n", buffer, size, result))
 
     if (result != NULL) {
         // errno gets set to 12 on my OS Xmachine in some cases even when the
@@ -92,6 +96,7 @@ coliter_t *coliter_new(parser_t *self, int i) {
 
 
 static  void free_if_not_null(void *ptr) {
+     TRACE(("free_if_not_null %p\n", ptr))
      if (ptr != NULL) free(ptr);
  }
 
@@ -291,11 +296,13 @@ static int make_stream_space(parser_t *self, size_t nbytes) {
     */
 
     orig_ptr = (void *) self->stream;
+    TRACE(("\n\nmake_stream_space: nbytes = %zu.  grow_buffer(self->stream...)\n", nbytes))
     self->stream = (char*) grow_buffer((void *) self->stream,
                                        self->stream_len,
                                        &self->stream_cap, nbytes * 2,
                                        sizeof(char), &status);
-
+    TRACE(("make_stream_space: self->stream=%p, self->stream_len = %zu, self->stream_cap=%zu, status=%zu\n",
+           self->stream, self->stream_len, self->stream_cap, status))
     if (status != 0) {
         return PARSER_OUT_OF_MEMORY;
     }
@@ -323,6 +330,8 @@ static int make_stream_space(parser_t *self, size_t nbytes) {
                                        self->words_len,
                                        &self->words_cap, nbytes,
                                        sizeof(char*), &status);
+    TRACE(("make_stream_space: grow_buffer(self->self->words, %zu, %zu, %zu, %d)\n",
+           self->words_len, self->words_cap, nbytes, status))
     if (status != 0) {
         return PARSER_OUT_OF_MEMORY;
     }
@@ -330,6 +339,7 @@ static int make_stream_space(parser_t *self, size_t nbytes) {
 
     // realloc took place
     if (cap != self->words_cap) {
+        TRACE(("make_stream_space: cap != self->words_cap, nbytes = %d, self->words_cap=%d\n", nbytes, self->words_cap))
         newptr = safe_realloc((void *) self->word_starts, sizeof(int) * self->words_cap);
         if (newptr == NULL) {
             return PARSER_OUT_OF_MEMORY;
@@ -357,12 +367,15 @@ static int make_stream_space(parser_t *self, size_t nbytes) {
                                           self->lines + 1,
                                           &self->lines_cap, nbytes,
                                           sizeof(int), &status);
+    TRACE(("make_stream_space: grow_buffer(self->line_start, %zu, %zu, %zu, %d)\n",
+           self->lines + 1, self->lines_cap, nbytes, status))
     if (status != 0) {
         return PARSER_OUT_OF_MEMORY;
     }
 
     // realloc took place
     if (cap != self->lines_cap) {
+        TRACE(("make_stream_space: cap != self->lines_cap, nbytes = %d\n", nbytes))
         newptr = safe_realloc((void *) self->line_fields, sizeof(int) * self->lines_cap);
         if (newptr == NULL) {
             return PARSER_OUT_OF_MEMORY;
@@ -379,6 +392,14 @@ static int make_stream_space(parser_t *self, size_t nbytes) {
 
 static int push_char(parser_t *self, char c) {
     /* TRACE(("pushing %c \n", c)) */
+    TRACE(("push_char: self->stream[%zu] = %x, stream_cap=%zu\n", self->stream_len+1, c, self->stream_cap))
+    if (self->stream_len >= self->stream_cap) {
+        TRACE(("push_char: ERROR!!! self->stream_len(%d) >= self->stream_cap(%d)\n",
+               self->stream_len, self->stream_cap))
+        self->error_msg = (char*) malloc(64);
+        sprintf(self->error_msg, "Buffer overflow caught - possible malformed input file.\n");
+        return PARSER_OUT_OF_MEMORY;
+    }
     self->stream[self->stream_len++] = c;
     return 0;
 }
@@ -386,6 +407,13 @@ static int push_char(parser_t *self, char c) {
 static int P_INLINE end_field(parser_t *self) {
     // XXX cruft
     self->numeric_field = 0;
+
+    if (self->words_len >= self->words_cap) {
+        TRACE(("end_field: ERROR!!! self->words_len(%zu) >= self->words_cap(%zu)\n", self->words_len, self->words_cap))
+        self->error_msg = (char*) malloc(64);
+        sprintf(self->error_msg, "Buffer overflow caught - possible malformed input file.\n");
+        return PARSER_OUT_OF_MEMORY;
+    }
 
     // null terminate token
     push_char(self, '\0');
@@ -524,6 +552,13 @@ static int end_line(parser_t *self) {
         /* printf("word at column 5: %s\n", COLITER_NEXT(it)); */
 
         // good line, set new start point
+        // good line, set new start point
+        if (self->lines >= self->lines_cap) {
+            TRACE(("end_line: ERROR!!! self->lines(%zu) >= self->lines_cap(%zu)\n", self->lines, self->lines_cap))  \
+            self->error_msg = (char*) malloc(100);      \
+            sprintf(self->error_msg, "Buffer overflow caught - possible malformed input file.\n"); \
+            return PARSER_OUT_OF_MEMORY;                \
+        }
         self->line_start[self->lines] = (self->line_start[self->lines - 1] +
                                          fields);
 
@@ -565,6 +600,8 @@ static int parser_buffer_bytes(parser_t *self, size_t nbytes) {
     status = 0;
     self->datapos = 0;
     self->data = self->cb_io(self->source, nbytes, &bytes_read, &status);
+    TRACE(("parser_buffer_bytes self->cb_io: nbytes=%zu, datalen: %d, status=%d\n",
+           nbytes, bytes_read, status));
     self->datalen = bytes_read;
 
     if (status != REACHED_EOF && self->data == NULL) {
@@ -593,17 +630,16 @@ static int parser_buffer_bytes(parser_t *self, size_t nbytes) {
 
 //    printf("pushing %c\n", c);
 
-#if defined(VERBOSE)
 #define PUSH_CHAR(c)                                \
-    printf("Pushing %c, slen now: %d\n", c, slen);  \
+    TRACE(("PUSH_CHAR: Pushing %c, slen= %d, stream_cap=%zu, stream_len=%zu\n", c, slen, self->stream_cap, self->stream_len)) \
+    if (slen >= maxstreamsize) {                    \
+        TRACE(("PUSH_CHAR: ERROR!!! slen(%d) >= maxstreamsize(%d)\n", slen, maxstreamsize))            \
+        self->error_msg = (char*) malloc(100);      \
+        sprintf(self->error_msg, "Buffer overflow caught - possible malformed input file.\n"); \
+        return PARSER_OUT_OF_MEMORY;                \
+    }                                               \
     *stream++ = c;                                  \
     slen++;
-#else
-#define PUSH_CHAR(c)                           \
-    *stream++ = c;                             \
-    slen++;
-#endif
-
 
 
 // This is a little bit of a hack but works for now
@@ -661,6 +697,7 @@ typedef int (*parser_op)(parser_t *self, size_t line_limit);
 int tokenize_delimited(parser_t *self, size_t line_limit)
 {
     int i, slen, start_lines;
+    long maxstreamsize;
     char c;
     char *stream;
     char *buf = self->data + self->datapos;
@@ -675,6 +712,7 @@ int tokenize_delimited(parser_t *self, size_t line_limit)
 
     stream = self->stream + self->stream_len;
     slen = self->stream_len;
+    maxstreamsize = self->stream_cap;
 
     TRACE(("%s\n", buf));
 
@@ -915,6 +953,7 @@ int tokenize_delim_customterm(parser_t *self, size_t line_limit)
 {
 
     int i, slen, start_lines;
+    long maxstreamsize;
     char c;
     char *stream;
     char *buf = self->data + self->datapos;
@@ -929,6 +968,7 @@ int tokenize_delim_customterm(parser_t *self, size_t line_limit)
 
     stream = self->stream + self->stream_len;
     slen = self->stream_len;
+    maxstreamsize = self->stream_cap;
 
     TRACE(("%s\n", buf));
 
@@ -1117,6 +1157,7 @@ linelimit:
 int tokenize_whitespace(parser_t *self, size_t line_limit)
 {
     int i, slen, start_lines;
+    long maxstreamsize;
     char c;
     char *stream;
     char *buf = self->data + self->datapos;
@@ -1130,6 +1171,7 @@ int tokenize_whitespace(parser_t *self, size_t line_limit)
 
     stream = self->stream + self->stream_len;
     slen = self->stream_len;
+    maxstreamsize = self->stream_cap;
 
     TRACE(("%s\n", buf));
 
@@ -1475,6 +1517,7 @@ int parser_trim_buffers(parser_t *self) {
     /* trim words, word_starts */
     new_cap = _next_pow2(self->words_len) + 1;
     if (new_cap < self->words_cap) {
+        TRACE(("parser_trim_buffers: new_cap < self->words_cap\n"));
         newptr = safe_realloc((void*) self->words, new_cap * sizeof(char*));
         if (newptr == NULL) {
             return PARSER_OUT_OF_MEMORY;
@@ -1492,7 +1535,10 @@ int parser_trim_buffers(parser_t *self) {
 
         /* trim stream */
     new_cap = _next_pow2(self->stream_len) + 1;
+    TRACE(("parser_trim_buffers: new_cap = %zu, stream_cap = %zu, lines_cap = %zu\n",
+           new_cap, self->stream_cap, self->lines_cap));
     if (new_cap < self->stream_cap) {
+        TRACE(("parser_trim_buffers: new_cap < self->stream_cap, calling safe_realloc\n"));
         newptr = safe_realloc((void*) self->stream, new_cap);
         if (newptr == NULL) {
             return PARSER_OUT_OF_MEMORY;
@@ -1518,6 +1564,7 @@ int parser_trim_buffers(parser_t *self) {
     /* trim line_start, line_fields */
     new_cap = _next_pow2(self->lines) + 1;
     if (new_cap < self->lines_cap) {
+        TRACE(("parser_trim_buffers: new_cap < self->lines_cap\n"));
         newptr = safe_realloc((void*) self->line_start, new_cap * sizeof(int));
         if (newptr == NULL) {
             return PARSER_OUT_OF_MEMORY;
@@ -1583,7 +1630,8 @@ int _tokenize_helper(parser_t *self, size_t nrows, int all) {
         return 0;
     }
 
-    TRACE(("Asked to tokenize %d rows\n", (int) nrows));
+    TRACE(("Asked to tokenize %d rows, datapos=%d, datalen=%d\n", \
+           (int) nrows, self->datapos, self->datalen));
 
     while (1) {
         if (!all && self->lines - start_lines >= nrows)
@@ -1602,7 +1650,8 @@ int _tokenize_helper(parser_t *self, size_t nrows, int all) {
             }
         }
 
-        TRACE(("Trying to process %d bytes\n", self->datalen - self->datapos));
+        TRACE(("_tokenize_helper: Trying to process %d bytes, datalen=%d, datapos= %d\n",
+               self->datalen - self->datapos, self->datalen, self->datapos));
         /* TRACE(("sourcetype: %c, status: %d\n", self->sourcetype, status)); */
 
         status = tokenize_bytes(self, nrows);
