@@ -280,7 +280,7 @@ void parser_free(parser_t *self) {
 
 static int make_stream_space(parser_t *self, size_t nbytes) {
     int i, status, cap;
-    void *orig_ptr;
+    void *orig_ptr, *newptr;
 
     // Can we fit potentially nbytes tokens (+ null terminators) in the stream?
 
@@ -330,10 +330,11 @@ static int make_stream_space(parser_t *self, size_t nbytes) {
 
     // realloc took place
     if (cap != self->words_cap) {
-        self->word_starts = (int*) safe_realloc((void *) self->word_starts,
-                                                sizeof(int) * self->words_cap);
-        if (self->word_starts == NULL) {
+        newptr = safe_realloc((void *) self->word_starts, sizeof(int) * self->words_cap);
+        if (newptr == NULL) {
             return PARSER_OUT_OF_MEMORY;
+        } else {
+            self->word_starts = (int*) newptr;
         }
     }
 
@@ -362,11 +363,11 @@ static int make_stream_space(parser_t *self, size_t nbytes) {
 
     // realloc took place
     if (cap != self->lines_cap) {
-        self->line_fields = (int*) safe_realloc((void *) self->line_fields,
-                                                sizeof(int) * self->lines_cap);
-
-        if (self->line_fields == NULL) {
+        newptr = safe_realloc((void *) self->line_fields, sizeof(int) * self->lines_cap);
+        if (newptr == NULL) {
             return PARSER_OUT_OF_MEMORY;
+        } else {
+            self->line_fields = (int*) newptr;
         }
     }
 
