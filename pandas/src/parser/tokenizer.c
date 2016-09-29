@@ -392,7 +392,7 @@ static int make_stream_space(parser_t *self, size_t nbytes) {
 
 static int push_char(parser_t *self, char c) {
     /* TRACE(("pushing %c \n", c)) */
-    TRACE(("push_char: self->stream[%zu] = %x, stream_cap=%zu\n", self->stream_len+1, c, self->stream_cap))
+    //TRACE(("push_char: self->stream[%zu] = %x, stream_cap=%zu\n", self->stream_len+1, c, self->stream_cap))
     if (self->stream_len >= self->stream_cap) {
         TRACE(("push_char: ERROR!!! self->stream_len(%d) >= self->stream_cap(%d)\n",
                self->stream_len, self->stream_cap))
@@ -631,7 +631,7 @@ static int parser_buffer_bytes(parser_t *self, size_t nbytes) {
 //    printf("pushing %c\n", c);
 
 #define PUSH_CHAR(c)                                \
-    TRACE(("PUSH_CHAR: Pushing %c, slen= %d, stream_cap=%zu, stream_len=%zu\n", c, slen, self->stream_cap, self->stream_len)) \
+    //TRACE(("PUSH_CHAR: Pushing %c, slen= %d, stream_cap=%zu, stream_len=%zu\n", c, slen, self->stream_cap, self->stream_len)) \
     if (slen >= maxstreamsize) {                    \
         TRACE(("PUSH_CHAR: ERROR!!! slen(%d) >= maxstreamsize(%d)\n", slen, maxstreamsize))            \
         self->error_msg = (char*) malloc(100);      \
@@ -714,16 +714,16 @@ int tokenize_delimited(parser_t *self, size_t line_limit)
     slen = self->stream_len;
     maxstreamsize = self->stream_cap;
 
-    TRACE(("%s\n", buf));
+    //TRACE(("%s\n", buf));
 
     for (i = self->datapos; i < self->datalen; ++i)
     {
         // Next character in file
         c = *buf++;
 
-        TRACE(("Iter: %d Char: %c Line %d field_count %d, state %d\n",
-               i, c, self->file_lines + 1, self->line_fields[self->lines],
-               self->state));
+        //TRACE(("Iter: %d Char: %c Line %d field_count %d, state %d\n",
+        //       i, c, self->file_lines + 1, self->line_fields[self->lines],
+        //       self->state));
 
         switch(self->state) {
 
