@@ -57,7 +57,7 @@ static void *safe_realloc(void *buffer, size_t size) {
     if (size == 0)
     {
          TRACE(("safe_realloc: asking for 0 length"));
-         return buffer;
+         abort();
     }
     result = realloc(buffer, size);
     TRACE(("safe_realloc: buffer = %p, size = %zu, result = %p\n", buffer, size, result))
@@ -115,24 +115,28 @@ static  void free_if_not_null(void *ptr) {
 
 static void *grow_buffer(void *buffer, int length, int *capacity,
                    int space, int elsize, int *error) {
-     int cap = *capacity;
+    int cap = *capacity;
+    void *newbuffer = buffer;
 
-     // Can we fit potentially nbytes tokens (+ null terminators) in the stream?
-     while (length + space > cap) {
-         cap = cap? cap << 1 : 2;
+    // Can we fit potentially nbytes tokens (+ null terminators) in the stream?
+    while ( (length + space >= cap) && (newbuffer != NULL) ){
+        cap = cap? cap << 1 : 2;
+        buffer = newbuffer;
+        newbuffer = safe_realloc(newbuffer, elsize * cap);
+    }
 
-         buffer = safe_realloc(buffer, elsize * cap);
-
-         if (buffer == NULL) {
-             // TODO: error codes
-             *error = -1;
-         }
-     }
-
-     // sigh, multiple return values
-     *capacity = cap;
-     *error = 0;
-     return buffer;
+    if (newbuffer == NULL) {
+        // realloc failed so don't change *capacity, set *error to errno
+        // and return the last good realloc'd buffer so it can be freed
+        *error = errno;
+        newbuffer = buffer;
+        } else {
+        // realloc worked, update *capacity and set *error to 0
+        // sigh, multiple return values
+        *capacity = cap;
+        *error = 0;
+    }
+    return newbuffer;
  }
 
 
