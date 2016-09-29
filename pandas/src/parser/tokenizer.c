@@ -1468,13 +1468,8 @@ int parser_trim_buffers(parser_t *self) {
       Free memory
      */
     size_t new_cap;
-
-    /* trim stream */
-    new_cap = _next_pow2(self->stream_len) + 1;
-    if (new_cap < self->stream_cap) {
-        self->stream = safe_realloc((void*) self->stream, new_cap);
-        self->stream_cap = new_cap;
-    }
+    void *newptr;
+    int i;
 
     /* trim words, word_starts */
     new_cap = _next_pow2(self->words_len) + 1;
@@ -1484,6 +1479,27 @@ int parser_trim_buffers(parser_t *self) {
         self->word_starts = (int*) safe_realloc((void*) self->word_starts,
                                                 new_cap * sizeof(int));
         self->words_cap = new_cap;
+    }
+
+        /* trim stream */
+    new_cap = _next_pow2(self->stream_len) + 1;
+    if (new_cap < self->stream_cap) {
+        newptr = safe_realloc((void*) self->stream, new_cap);
+        // Update the pointers in the self->words array (char **) if `safe_realloc`
+        //  moved the `self->stream` buffer. This block mirrors a similar block in
+        //  `make_stream_space`.
+        if (self->stream != newptr) {
+            self->pword_start = newptr + self->word_start;
+
+            for (i = 0; i < self->words_len; ++i)
+            {
+                self->words[i] = newptr + self->word_starts[i];
+            }
+        }
+
+        self->stream = newptr;
+        self->stream_cap = new_cap;
+
     }
 
     /* trim line_start, line_fields */
