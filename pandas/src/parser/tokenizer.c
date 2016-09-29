@@ -54,6 +54,11 @@ static void *safe_realloc(void *buffer, size_t size) {
     // http://stackoverflow.com/questions/9560609/
     // different-realloc-behaviour-in-linux-and-osx
 
+    if (size == 0)
+    {
+         TRACE(("safe_realloc: asking for 0 length"));
+         return buffer;
+    }
     result = realloc(buffer, size);
     TRACE(("safe_realloc: buffer = %p, size = %zu, result = %p\n", buffer, size, result))
 
