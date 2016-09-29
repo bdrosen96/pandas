@@ -421,10 +421,10 @@ static int P_INLINE end_field(parser_t *self) {
     // set pointer and metadata
     self->words[self->words_len] = self->pword_start;
 
-    TRACE(("Char diff: %d\n", self->pword_start - self->words[0]));
+    //TRACE(("Char diff: %d\n", self->pword_start - self->words[0]));
 
-    TRACE(("Saw word %s at: %d. Total: %d\n",
-           self->pword_start, self->word_start, self->words_len + 1))
+    //TRACE(("Saw word %s at: %d. Total: %d\n",
+    //       self->pword_start, self->word_start, self->words_len + 1))
 
     self->word_starts[self->words_len] = self->word_start;
     self->words_len++;
