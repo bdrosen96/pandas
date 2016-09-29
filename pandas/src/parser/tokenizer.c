@@ -1475,42 +1475,62 @@ int parser_trim_buffers(parser_t *self) {
     /* trim words, word_starts */
     new_cap = _next_pow2(self->words_len) + 1;
     if (new_cap < self->words_cap) {
-        self->words = (char**) safe_realloc((void*) self->words,
-                                            new_cap * sizeof(char*));
-        self->word_starts = (int*) safe_realloc((void*) self->word_starts,
-                                                new_cap * sizeof(int));
-        self->words_cap = new_cap;
+        newptr = safe_realloc((void*) self->words, new_cap * sizeof(char*));
+        if (newptr == NULL) {
+            return PARSER_OUT_OF_MEMORY;
+        } else {
+            self->words = (char**) newptr;
+        }
+        newptr = safe_realloc((void*) self->word_starts, new_cap * sizeof(int));
+        if (newptr == NULL) {
+            return PARSER_OUT_OF_MEMORY;
+        } else {
+            self->word_starts = (int*) newptr;
+            self->words_cap = new_cap;
+        }
     }
 
         /* trim stream */
     new_cap = _next_pow2(self->stream_len) + 1;
     if (new_cap < self->stream_cap) {
         newptr = safe_realloc((void*) self->stream, new_cap);
-        // Update the pointers in the self->words array (char **) if `safe_realloc`
-        //  moved the `self->stream` buffer. This block mirrors a similar block in
-        //  `make_stream_space`.
-        if (self->stream != newptr) {
-            self->pword_start = newptr + self->word_start;
+        if (newptr == NULL) {
+            return PARSER_OUT_OF_MEMORY;
+        } else {
+            // Update the pointers in the self->words array (char **) if `safe_realloc`
+            //  moved the `self->stream` buffer. This block mirrors a similar block in
+            //  `make_stream_space`.
+            if (self->stream != newptr) {
+                self->pword_start = newptr + self->word_start;
 
-            for (i = 0; i < self->words_len; ++i)
-            {
-                self->words[i] = newptr + self->word_starts[i];
+                for (i = 0; i < self->words_len; ++i)
+                {
+                    self->words[i] = newptr + self->word_starts[i];
+                }
             }
-        }
 
-        self->stream = newptr;
-        self->stream_cap = new_cap;
+            self->stream = newptr;
+            self->stream_cap = new_cap;
+        }
 
     }
 
     /* trim line_start, line_fields */
     new_cap = _next_pow2(self->lines) + 1;
     if (new_cap < self->lines_cap) {
-        self->line_start = (int*) safe_realloc((void*) self->line_start,
-                                               new_cap * sizeof(int));
-        self->line_fields = (int*) safe_realloc((void*) self->line_fields,
-                                                new_cap * sizeof(int));
-        self->lines_cap = new_cap;
+        newptr = safe_realloc((void*) self->line_start, new_cap * sizeof(int));
+        if (newptr == NULL) {
+            return PARSER_OUT_OF_MEMORY;
+        } else {
+            self->line_start = (int*) newptr;
+        }
+        newptr = safe_realloc((void*) self->line_fields, new_cap * sizeof(int));
+        if (newptr == NULL) {
+            return PARSER_OUT_OF_MEMORY;
+        } else {
+            self->line_fields = (int*) newptr;
+            self->lines_cap = new_cap;
+        }
     }
 
     return 0;

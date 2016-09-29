@@ -747,7 +747,9 @@ cdef class TextReader:
                 else:
                     chunks.append(chunk)
 
-        parser_trim_buffers(self.parser)
+        status = parser_trim_buffers(self.parser)
+        if status < 0:
+            raise_parser_error('Error trimming data', self.parser)
 
         if len(chunks) == 0:
             raise StopIteration
@@ -812,7 +814,10 @@ cdef class TextReader:
             # trim
             parser_consume_rows(self.parser, rows_read)
             if trim:
-                parser_trim_buffers(self.parser)
+                status = parser_trim_buffers(self.parser)
+
+                if status < 0:
+                    raise_parser_error('Error trimming data', self.parser)
             self.parser_start -= rows_read
 
         self._end_clock('Parser memory cleanup')
