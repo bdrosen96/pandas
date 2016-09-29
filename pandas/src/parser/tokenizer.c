@@ -463,7 +463,7 @@ static int end_line(parser_t *self) {
 
     fields = self->line_fields[self->lines];
 
-    TRACE(("Line end, nfields: %d\n", fields));
+    //TRACE(("Line end, nfields: %d\n", fields));
 
     if (self->lines > 0) {
         if (self->expected_fields >= 0) {
@@ -477,7 +477,7 @@ static int end_line(parser_t *self) {
         k = kh_get_int64((kh_int64_t*) self->skipset, self->file_lines);
 
         if (k != ((kh_int64_t*)self->skipset)->n_buckets) {
-            TRACE(("Skipping row %d\n", self->file_lines));
+            //TRACE(("Skipping row %d\n", self->file_lines));
             // increment file line count
             self->file_lines++;
 
