@@ -422,10 +422,10 @@ static int P_INLINE end_field(parser_t *self) {
     // set pointer and metadata
     self->words[self->words_len] = self->pword_start;
 
-    //TRACE(("Char diff: %d\n", self->pword_start - self->words[0]));
+    TRACE(("Char diff: %d\n", self->pword_start - self->words[0]));
 
-    //TRACE(("Saw word %s at: %d. Total: %d\n",
-    //       self->pword_start, self->word_start, self->words_len + 1))
+    TRACE(("Saw word %s at: %d. Total: %d\n",
+           self->pword_start, self->word_start, self->words_len + 1))
 
     self->word_starts[self->words_len] = self->word_start;
     self->words_len++;
@@ -464,7 +464,7 @@ static int end_line(parser_t *self) {
 
     fields = self->line_fields[self->lines];
 
-    //TRACE(("Line end, nfields: %d\n", fields));
+    TRACE(("Line end, nfields: %d\n", fields));
 
     if (self->lines > 0) {
         if (self->expected_fields >= 0) {
@@ -627,7 +627,7 @@ static int parser_buffer_bytes(parser_t *self, size_t nbytes) {
 //    printf("pushing %c\n", c);
 
 #define PUSH_CHAR(c)                                \
-    /*TRACE(("PUSH_CHAR: Pushing %c, slen= %d, stream_cap=%zu, stream_len=%zu\n", c, slen, self->stream_cap, self->stream_len)) */ \
+    TRACE(("PUSH_CHAR: Pushing %c, slen= %d, stream_cap=%zu, stream_len=%zu\n", c, slen, self->stream_cap, self->stream_len))  \
     if (slen >= maxstreamsize) {                    \
         TRACE(("PUSH_CHAR: ERROR!!! slen(%d) >= maxstreamsize(%d)\n", slen, maxstreamsize))            \
         self->error_msg = (char*) malloc(100);      \
@@ -718,16 +718,16 @@ int tokenize_delimited(parser_t *self, size_t line_limit)
     slen = self->stream_len;
     maxstreamsize = self->stream_cap;
 
-    //TRACE(("%s\n", buf));
+    TRACE(("%s\n", buf));
 
     for (i = self->datapos; i < self->datalen; ++i)
     {
         // Next character in file
         c = *buf++;
 
-        //TRACE(("Iter: %d Char: %c Line %d field_count %d, state %d\n",
-        //       i, c, self->file_lines + 1, self->line_fields[self->lines],
-        //       self->state));
+        TRACE(("Iter: %d Char: %c Line %d field_count %d, state %d\n",
+               i, c, self->file_lines + 1, self->line_fields[self->lines],
+               self->state));
 
         switch(self->state) {
 
