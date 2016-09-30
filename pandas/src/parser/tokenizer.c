@@ -480,22 +480,17 @@ static int end_line(parser_t *self) {
             ex_fields = self->line_fields[self->lines - 1];
         }
     }
+    if (self->state == SKIP_LINE) {
+        TRACE(("Skipping row %d\n", self->file_lines));
+        // increment file line count
+        self->file_lines++;
 
-    if (self->skipset != NULL) {
-        k = kh_get_int64((kh_int64_t*) self->skipset, self->file_lines);
+        // skip the tokens from this bad line
+        self->line_start[self->lines] += fields;
 
-        if (k != ((kh_int64_t*)self->skipset)->n_buckets) {
-            //TRACE(("Skipping row %d\n", self->file_lines));
-            // increment file line count
-            self->file_lines++;
-
-            // skip the tokens from this bad line
-            self->line_start[self->lines] += fields;
-
-            // reset field count
-            self->line_fields[self->lines] = 0;
-            return 0;
-        }
+        // reset field count
+        self->line_fields[self->lines] = 0;
+        return 0;
     }
 
     /* printf("Line: %d, Fields: %d, Ex-fields: %d\n", self->lines, fields, ex_fields); */
@@ -701,6 +696,14 @@ typedef int (*parser_op)(parser_t *self, size_t line_limit);
     TRACE(("datapos: %d, datalen: %d\n", self->datapos, self->datalen));
 
 
+int skip_this_line(parser_t *self, int64_t rownum) {
+    if (self->skipset != NULL) {
+        return ( kh_get_int64((kh_int64_t*) self->skipset, self->file_lines) !=
+                 ((kh_int64_t*)self->skipset)->n_buckets );
+    }
+    return 0;
+}
+
 
 int tokenize_delimited(parser_t *self, size_t line_limit)
 {
@@ -735,10 +738,25 @@ int tokenize_delimited(parser_t *self, size_t line_limit)
 
         switch(self->state) {
 
+        case SKIP_LINE:
+            TRACE(("tokenize_delimited SKIP_LINE %c, state %d\n", c, self->state));
+            if (c == '\n') {
+                END_LINE();
+            }
+            break;
+
         case START_RECORD:
             // start of record
-
-            if (c == '\n') {
+            if (skip_this_line(self, self->file_lines)) {
+                if (c == '\n') {
+                    END_LINE()
+                }
+                else {
+                    self->state = SKIP_LINE;
+                }
+                break;
+            }
+            else if (c == '\n') {
                 // \n\r possible?
                 END_LINE();
                 break;
@@ -990,9 +1008,26 @@ int tokenize_delim_customterm(parser_t *self, size_t line_limit)
                self->state));
 
         switch(self->state) {
+
+        case SKIP_LINE:
+            TRACE(("tokenize_delim_customterm SKIP_LINE %c, state %d\n", c, self->state));
+            if (c == self->lineterminator) {
+                END_LINE();
+            }
+            break;
+
         case START_RECORD:
             // start of record
-            if (c == self->lineterminator) {
+            if (skip_this_line(self, self->file_lines)) {
+                if (c == self->lineterminator) {
+                    END_LINE()
+                }
+                else {
+                    self->state = SKIP_LINE;
+                }
+                break;
+            }
+            else if (c == self->lineterminator) {
                 // \n\r possible?
                 END_LINE();
                 break;
@@ -1193,6 +1228,12 @@ int tokenize_whitespace(parser_t *self, size_t line_limit)
                self->state));
 
         switch(self->state) {
+        case SKIP_LINE:
+            TRACE(("tokenize_whitespace SKIP_LINE %c, state %d\n", c, self->state));
+            if (c == '\n') {
+                END_LINE();
+            }
+            break;
 
         case EAT_WHITESPACE:
             if (!IS_WHITESPACE(c)) {
@@ -1206,7 +1247,16 @@ int tokenize_whitespace(parser_t *self, size_t line_limit)
 
         case START_RECORD:
             // start of record
-            if (c == '\n') {
+            if (skip_this_line(self, self->file_lines)) {
+                if (c == '\n') {
+                    END_LINE()
+                }
+                else {
+                    self->state = SKIP_LINE;
+                }
+                break;
+            }
+            else if (c == '\n') {
                 // \n\r possible?
                 END_LINE();
                 break;

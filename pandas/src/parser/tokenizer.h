@@ -123,6 +123,7 @@ typedef enum {
     EAT_CRNL,
     EAT_WHITESPACE,
     EAT_COMMENT,
+    SKIP_LINE,
     FINISHED
 } ParserState;
 
