@@ -393,7 +393,7 @@ static int make_stream_space(parser_t *self, size_t nbytes) {
 
 static int push_char(parser_t *self, char c) {
     /* TRACE(("pushing %c \n", c)) */
-    //TRACE(("push_char: self->stream[%zu] = %x, stream_cap=%zu\n", self->stream_len+1, c, self->stream_cap))
+    TRACE(("push_char: self->stream[%zu] = %x, stream_cap=%zu\n", self->stream_len+1, c, self->stream_cap))
     if (self->stream_len >= self->stream_cap) {
         TRACE(("push_char: ERROR!!! self->stream_len(%d) >= self->stream_cap(%d)\n",
                self->stream_len, self->stream_cap))
