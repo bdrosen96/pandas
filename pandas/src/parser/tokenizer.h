@@ -222,7 +222,7 @@ typedef struct coliter_t {
     int64_t col;
 } coliter_t;
 
-void coliter_setup(coliter_t *self, parser_t *parser, int int64_t, int64_t start);
+void coliter_setup(coliter_t *self, parser_t *parser, int64_t i, int64_t start);
 coliter_t *coliter_new(parser_t *self, int i);
 
 /* #define COLITER_NEXT(iter) iter->words[iter->line_start[iter->line++] + iter->col] */
