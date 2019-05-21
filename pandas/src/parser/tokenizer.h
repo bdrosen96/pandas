@@ -145,30 +145,30 @@ typedef struct parser_t {
     io_callback cb_io;
     io_cleanup cb_cleanup;
 
-    int chunksize;  // Number of bytes to prepare for each chunk
+    int64_t chunksize;  // Number of bytes to prepare for each chunk
     char *data;     // pointer to data to be processed
-    int datalen;    // amount of data available
-    int datapos;
+    int64_t datalen;    // amount of data available
+    int64_t datapos;
 
     // where to write out tokenized data
     char *stream;
-    int stream_len;
-    int stream_cap;
+    int64_t stream_len;
+    int64_t stream_cap;
 
     // Store words in (potentially ragged) matrix for now, hmm
     char **words;
-    int *word_starts; // where we are in the stream
-    int words_len;
-    int words_cap;
+    int64_t *word_starts; // where we are in the stream
+    int64_t words_len;
+    int64_t words_cap;
 
     char *pword_start;    // pointer to stream start of current field
-    int word_start;       // position start of current field
+    int64_t word_start;       // position start of current field
 
-    int *line_start;      // position in words for start of line
-    int *line_fields;     // Number of fields in each line
-    int lines;            // Number of (good) lines observed
-    int file_lines;       // Number of file lines observed (including bad or skipped)
-    int lines_cap;        // Vector capacity
+    int64_t *line_start;      // position in words for start of line
+    int64_t *line_fields;     // Number of fields in each line
+    int64_t lines;            // Number of (good) lines observed
+    int64_t file_lines;       // Number of file lines observed (including bad or skipped)
+    int64_t lines_cap;        // Vector capacity
 
     // Tokenizing stuff
     ParserState state;
@@ -200,36 +200,36 @@ typedef struct parser_t {
     char thousands;
 
     int header; // Boolean: 1: has header, 0: no header
-    int header_start; // header row start
-    int header_end;   // header row end
+    int64_t header_start; // header row start
+    int64_t header_end;   // header row end
 
     void *skipset;
     int64_t skip_first_N_rows;
-    int skip_footer;
+    int64_t skip_footer;
     double (*converter)(const char *, char **, char, char, char, int);
 
     // error handling
     char *warn_msg;
     char *error_msg;
 
-    int skip_empty_lines;
+    int64_t skip_empty_lines;
 } parser_t;
 
 
 typedef struct coliter_t {
     char **words;
-    int *line_start;
-    int col;
+    int64_t *line_start;
+    int64_t col;
 } coliter_t;
 
-void coliter_setup(coliter_t *self, parser_t *parser, int i, int start);
+void coliter_setup(coliter_t *self, parser_t *parser, int int64_t, int64_t start);
 coliter_t *coliter_new(parser_t *self, int i);
 
 /* #define COLITER_NEXT(iter) iter->words[iter->line_start[iter->line++] + iter->col] */
 // #define COLITER_NEXT(iter) iter.words[iter.line_start[iter.line++] + iter.col]
 
 #define COLITER_NEXT(iter, word) do { \
-    const int i = *iter.line_start++ + iter.col; \
+    const int64_t i = *iter.line_start++ + iter.col; \
     word = i < *iter.line_start ? iter.words[i]: ""; \
     } while(0)
 
