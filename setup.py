@@ -197,7 +197,7 @@ MINOR = 16
 MICRO = 1
 ISRELEASED = True
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
-QUALIFIER = ''
+QUALIFIER = 'a1'
 
 FULLVERSION = VERSION
 write_version = True
