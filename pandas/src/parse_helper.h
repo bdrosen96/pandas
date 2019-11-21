@@ -29,6 +29,12 @@ int floatify(PyObject* str, double *result) {
         data = PyBytes_AS_STRING(str);
     } else if (PyUnicode_Check(str)) {
         tmp = PyUnicode_AsUTF8String(str);
+        if (tmp == NULL) {
+            // This means we cannot convert to UTF-8
+            // so not a valid float
+            PyErr_SetString(PyExc_TypeError, "Unable to parse string");
+            return -1;
+        }
         data = PyBytes_AS_STRING(tmp);
     } else {
         PyErr_SetString(PyExc_TypeError, "Invalid object type");
